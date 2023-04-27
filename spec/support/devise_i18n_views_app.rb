@@ -1,6 +1,7 @@
 require "action_controller/railtie"
 require "active_model"
 require 'omniauth-twitter'
+require 'devise-i18n/view_helpers'
 
 class User
   def email
@@ -10,27 +11,37 @@ class User
   def pending_reconfirmation?
     false
   end
-  
+
   def self.unlock_strategy_enabled?(something)
     true
   end
-  
+
   def self.omniauth_providers
     [:twitter]
   end
-  
+
   def remember_me
   end
-  
+
   def reset_password_token
   end
 
+  def self.model_name
+    ActiveModel::Name.new(self)
+  end
+
   def model_name
-    ActiveModel::Name.new(self.class)
+    self.class.model_name
   end
 
   def errors
-    ActiveModel::Errors.new(self)
+    errors = ActiveModel::Errors.new(self)
+    errors.add(:base, :invalid)
+    errors
+  end
+
+  def self.human_attribute_name(attribute, options = {})
+    attribute
   end
 end
 USER = User.new
@@ -47,7 +58,7 @@ class DeviseI18nViewsApp < Rails::Application
   def self.view_path
     @view_path
   end
-  
+
   def self.use_devise_i18n_views!
     @view_path = 'app/views'
   end
@@ -55,7 +66,7 @@ class DeviseI18nViewsApp < Rails::Application
   def self.use_devise_views!
     @view_path = Gem::Specification.find_by_name("devise").gem_dir + '/app/views'
   end
-  
+
   @view_to_render = nil
   attr_accessor :view_to_render
 
@@ -74,18 +85,18 @@ module TestHelper
   def resource
     USER
   end
-  
+
   def resource_name
     'User'
   end
-  
+
   def resource_class
     User
   end
 
   def devise_error_messages!
   end
-  
+
   def devise_mapping
     DeviseMapping.new
   end
@@ -99,6 +110,7 @@ end
 
 class TestController < ActionController::Base
   helper TestHelper
+  helper DeviseI18n::ViewHelpers
 
   before_action do
     instance_variable_set(:@view_paths, [])
